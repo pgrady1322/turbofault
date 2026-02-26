@@ -25,6 +25,7 @@ License: MIT License - See LICENSE
 """
 
 import logging
+import ssl
 import urllib.request
 import zipfile
 from dataclasses import dataclass, field
@@ -69,8 +70,12 @@ ALL_COLUMNS = ["engine_id", "cycle"] + OPERATIONAL_SETTINGS + SENSOR_COLUMNS
 LOW_VARIANCE_SENSORS = ["sensor_1", "sensor_5", "sensor_6", "sensor_10",
                         "sensor_16", "sensor_18", "sensor_19"]
 
-# C-MAPSS download URL (NASA Prognostics Data Repository)
-CMAPSS_URL = "https://ti.arc.nasa.gov/c/6/"
+# C-MAPSS download URLs (primary: PHM Society S3 mirror; fallback: NASA)
+CMAPSS_URLS = [
+    "https://phm-datasets.s3.amazonaws.com/NASA/6.+Turbofan+Engine+Degradation+Simulation+Data+Set.zip",
+    "https://ti.arc.nasa.gov/c/6/",
+]
+CMAPSS_URL = CMAPSS_URLS[0]  # kept for backwards-compat
 
 # Subset metadata
 SUBSET_INFO = {
@@ -195,20 +200,71 @@ def download_cmapss(output_dir: Path) -> Path:
         logger.info(f"✓ C-MAPSS data already exists: {extract_dir}")
         return extract_dir
 
-    logger.info(f"Downloading C-MAPSS dataset from {CMAPSS_URL}...")
-    try:
-        urllib.request.urlretrieve(CMAPSS_URL, zip_path)
-    except Exception as e:
-        logger.error(f"Download failed: {e}")
-        logger.info("Manual download: https://ti.arc.nasa.gov/tech/dash/groups/pcoe/prognostic-data-repository/")
-        logger.info("Search for 'Turbofan Engine Degradation Simulation Data Set'")
-        raise
+    logger.info("Downloading C-MAPSS dataset...")
+
+    def _download(url: str, dest: Path) -> None:
+        """Download *url* to *dest*, falling back to unverified SSL if needed."""
+        try:
+            urllib.request.urlretrieve(url, dest)
+        except (ssl.SSLCertVerificationError, urllib.error.URLError):
+            logger.warning("SSL verification failed — retrying without verification")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            opener = urllib.request.build_opener(
+                urllib.request.HTTPSHandler(context=ctx)
+            )
+            with opener.open(url) as resp, open(dest, "wb") as f:
+                f.write(resp.read())
+
+    # Try each mirror until we get a valid zip
+    last_err: Exception | None = None
+    for url in CMAPSS_URLS:
+        logger.info(f"  Trying {url} ...")
+        try:
+            _download(url, zip_path)
+            # Validate that we actually got a zip (not an HTML landing page)
+            if not zipfile.is_zipfile(zip_path):
+                zip_path.unlink(missing_ok=True)
+                raise ValueError(f"Downloaded file is not a valid zip (URL may have changed)")
+            break  # success
+        except Exception as e:
+            last_err = e
+            logger.warning(f"  Mirror failed: {e}")
+            zip_path.unlink(missing_ok=True)
+    else:
+        logger.error(f"All download mirrors failed. Last error: {last_err}")
+        logger.info("Manual download: https://www.kaggle.com/datasets/behrad3d/nasa-cmaps")
+        logger.info("Extract into <output_dir>/CMAPSSData/ and re-run.")
+        raise RuntimeError("C-MAPSS download failed from all mirrors") from last_err
 
     logger.info("Extracting...")
     with zipfile.ZipFile(zip_path, "r") as zf:
         zf.extractall(output_dir)
 
-    zip_path.unlink()
+    # Handle nested zip: the PHM S3 mirror wraps CMAPSSData.zip inside an
+    # outer zip under a long-named folder.  The inner zip has the 14 data
+    # files at the root (no CMAPSSData/ prefix), so we extract them into
+    # the expected extract_dir.
+    if not extract_dir.exists():
+        inner_zips = [
+            p for p in output_dir.rglob("CMAPSSData.zip")
+            if p != zip_path
+        ]
+        if inner_zips:
+            inner = inner_zips[0]
+            logger.info(f"  Found nested zip: {inner.relative_to(output_dir)}")
+            extract_dir.mkdir(parents=True, exist_ok=True)
+            with zipfile.ZipFile(inner, "r") as zf2:
+                zf2.extractall(extract_dir)
+            # Clean up the outer extraction folder
+            inner.unlink()
+            inner_parent = inner.parent
+            if inner_parent != output_dir:
+                import shutil
+                shutil.rmtree(inner_parent, ignore_errors=True)
+
+    zip_path.unlink(missing_ok=True)
     logger.info(f"✓ Extracted to {extract_dir}")
     return extract_dir
 
