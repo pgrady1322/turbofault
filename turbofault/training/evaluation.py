@@ -76,12 +76,16 @@ def evaluate_rul(
         f"{prefix}nasa_score": score,
     }
 
-    logger.info(f"{'—' * 40}")
-    logger.info(f"RMSE:        {rmse:.2f}")
-    logger.info(f"MAE:         {mae:.2f}")
-    logger.info(f"R²:          {r2:.4f}")
-    logger.info(f"NASA Score:  {score:.2f}")
-    logger.info(f"{'—' * 40}")
+    summary = (
+        f"{'—' * 40}\n"
+        f"RMSE:        {rmse:.2f}\n"
+        f"MAE:         {mae:.2f}\n"
+        f"R²:          {r2:.4f}\n"
+        f"NASA Score:  {score:.2f}\n"
+        f"{'—' * 40}"
+    )
+    print(summary)
+    logger.info(summary)
 
     return results
 
@@ -145,6 +149,7 @@ def print_comparison_table(
         lines.append(row)
 
     table = "\n".join(lines)
+    print(table)
     logger.info(f"\n{table}")
     return table
 
