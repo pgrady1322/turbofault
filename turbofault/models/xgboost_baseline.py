@@ -161,12 +161,15 @@ class RidgeRUL:
         X_val: Optional[np.ndarray] = None,
         y_val: Optional[np.ndarray] = None,
     ) -> "RidgeRUL":
-        self.model.fit(X_train, y_train)
+        # Ridge cannot handle NaN (unlike tree-based models); fill with 0
+        X_clean = np.nan_to_num(X_train, nan=0.0, posinf=0.0, neginf=0.0)
+        self.model.fit(X_clean, y_train)
         logger.info("✓ Ridge regression fitted")
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        return self.model.predict(X)
+        X_clean = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
+        return self.model.predict(X_clean)
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.
