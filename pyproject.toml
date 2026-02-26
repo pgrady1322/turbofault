@@ -1,0 +1,96 @@
+# ═══════════════════════════════════════════════════════════════════════
+# TurboFault — Project Configuration (PEP 517/518)
+# ═══════════════════════════════════════════════════════════════════════
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "turbofault"
+version = "0.1.0"
+description = "Multimodal time-series anomaly detection and remaining useful life prediction for turbofan engines"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Patrick Grady"}]
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.0",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "scikit-learn>=1.3",
+    "xgboost>=2.0",
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+    "pyyaml",
+    "tqdm",
+    "rich",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.optional-dependencies]
+deep = [
+    "torch>=2.0",
+]
+optuna = ["optuna>=3.0"]
+mlops = ["mlflow>=2.0", "dvc>=3.0"]
+dev = ["pytest>=7.0", "pytest-cov", "ruff", "mypy"]
+all = ["turbofault[deep,optuna,mlops,dev]"]
+
+[project.scripts]
+turbofault = "turbofault.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/pgrady1322/turbofault"
+Repository = "https://github.com/pgrady1322/turbofault"
+
+# ═══════════════════════════════════════════════════════════════════════
+# Tool Configuration
+# ═══════════════════════════════════════════════════════════════════════
+
+[tool.setuptools.packages.find]
+include = ["turbofault*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["turbofault"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_redundant_casts = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

@@ -1,0 +1,46 @@
+# ═══════════════════════════════════════════════════════════════════════
+# TurboFault — .gitignore
+# ═══════════════════════════════════════════════════════════════════════
+
+# Data (download via CLI)
+data/*
+!data/.gitkeep
+
+# Trained models
+trained_models/*
+!trained_models/.gitkeep
+*.pkl
+*.pt
+
+# Results
+results/*
+!results/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
