@@ -12,11 +12,11 @@ This project is a proof-of-concept for liftover of genomics engineering and mach
 
 | Skill | Source | Application Here |
 |-------|--------|------------------|
-| Sensor fusion | immunomics (multi-omics integration) | 21-channel sensor → unified degradation signal |
-| Temporal modeling | scRN_AI (trajectory inference) | LSTM/Transformer sequence windows |
-| Feature engineering | GraphFraud (Elliptic features) | Rolling stats, lag features, EWMA |
-| Tabular baselines | strandweaver (XGBoost training) | XGBoost / RF / Ridge baselines |
-| Attention mechanisms | strandweaver (Transformer) | Multi-head self-attention over sensor sequences |
+| Sensor fusion | [immunomics](https://github.com/pgrady1322/immunomics) (multi-omics integration) | 21-channel sensor → unified degradation signal |
+| Temporal modeling | [scRN_AI](https://github.com/pgrady1322/scRN_AI) (trajectory inference) | LSTM/Transformer sequence windows |
+| Feature engineering | [graphfraud](https://github.com/pgrady1322/graphfraud) (Elliptic features) | Rolling stats, lag features, EWMA |
+| Tabular baselines | [Strandweaver](https://github.com/pgrady1322/strandweaver) (XGBoost training) | XGBoost / RF / Ridge baselines |
+| Attention mechanisms | [Strandweaver](https://github.com/pgrady1322/strandweaver) (GAT2Conv attention network) | Multi-head self-attention over sensor sequences |
 
 ---
 
