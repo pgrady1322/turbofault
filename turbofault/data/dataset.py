@@ -28,11 +28,9 @@ import logging
 import ssl
 import urllib.request
 import zipfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 logger = logging.getLogger("turbofault")
@@ -41,15 +39,15 @@ logger = logging.getLogger("turbofault")
 OPERATIONAL_SETTINGS = ["op_setting_1", "op_setting_2", "op_setting_3"]
 
 SENSOR_COLUMNS = [
-    "sensor_1",   # Total temperature at fan inlet (°R)
-    "sensor_2",   # Total temperature at LPC outlet (°R)
-    "sensor_3",   # Total temperature at HPC outlet (°R)
-    "sensor_4",   # Total temperature at LPT outlet (°R)
-    "sensor_5",   # Pressure at fan inlet (psia)
-    "sensor_6",   # Total pressure in bypass-duct (psia)
-    "sensor_7",   # Total pressure at HPC outlet (psia)
-    "sensor_8",   # Physical fan speed (rpm)
-    "sensor_9",   # Physical core speed (rpm)
+    "sensor_1",  # Total temperature at fan inlet (°R)
+    "sensor_2",  # Total temperature at LPC outlet (°R)
+    "sensor_3",  # Total temperature at HPC outlet (°R)
+    "sensor_4",  # Total temperature at LPT outlet (°R)
+    "sensor_5",  # Pressure at fan inlet (psia)
+    "sensor_6",  # Total pressure in bypass-duct (psia)
+    "sensor_7",  # Total pressure at HPC outlet (psia)
+    "sensor_8",  # Physical fan speed (rpm)
+    "sensor_9",  # Physical core speed (rpm)
     "sensor_10",  # Engine pressure ratio (P50/P2)
     "sensor_11",  # Static pressure at HPC outlet (psia)
     "sensor_12",  # Ratio of fuel flow to Ps30 (pps/psi)
@@ -67,8 +65,15 @@ SENSOR_COLUMNS = [
 ALL_COLUMNS = ["engine_id", "cycle"] + OPERATIONAL_SETTINGS + SENSOR_COLUMNS
 
 # Sensors with near-zero variance in FD001 (often dropped)
-LOW_VARIANCE_SENSORS = ["sensor_1", "sensor_5", "sensor_6", "sensor_10",
-                        "sensor_16", "sensor_18", "sensor_19"]
+LOW_VARIANCE_SENSORS = [
+    "sensor_1",
+    "sensor_5",
+    "sensor_6",
+    "sensor_10",
+    "sensor_16",
+    "sensor_18",
+    "sensor_19",
+]
 
 # C-MAPSS download URLs (primary: PHM Society S3 mirror; fallback: NASA)
 CMAPSS_URLS = [
@@ -158,8 +163,10 @@ class CMAPSSDataset:
             f"  Max RUL cap:   {self.max_rul}",
         ]
         if "rul" in self.train_df.columns:
-            lines.append(f"  Train RUL range: [{self.train_df['rul'].min()}, "
-                         f"{self.train_df['rul'].max()}]")
+            lines.append(
+                f"  Train RUL range: [{self.train_df['rul'].min()}, "
+                f"{self.train_df['rul'].max()}]"
+            )
         return "\n".join(lines)
 
 
@@ -211,9 +218,7 @@ def download_cmapss(output_dir: Path) -> Path:
             ctx = ssl.create_default_context()
             ctx.check_hostname = False
             ctx.verify_mode = ssl.CERT_NONE
-            opener = urllib.request.build_opener(
-                urllib.request.HTTPSHandler(context=ctx)
-            )
+            opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
             with opener.open(url) as resp, open(dest, "wb") as f:
                 f.write(resp.read())
 
@@ -226,7 +231,7 @@ def download_cmapss(output_dir: Path) -> Path:
             # Validate that we actually got a zip (not an HTML landing page)
             if not zipfile.is_zipfile(zip_path):
                 zip_path.unlink(missing_ok=True)
-                raise ValueError(f"Downloaded file is not a valid zip (URL may have changed)")
+                raise ValueError("Downloaded file is not a valid zip (URL may have changed)")
             break  # success
         except Exception as e:
             last_err = e
@@ -247,10 +252,7 @@ def download_cmapss(output_dir: Path) -> Path:
     # files at the root (no CMAPSSData/ prefix), so we extract them into
     # the expected extract_dir.
     if not extract_dir.exists():
-        inner_zips = [
-            p for p in output_dir.rglob("CMAPSSData.zip")
-            if p != zip_path
-        ]
+        inner_zips = [p for p in output_dir.rglob("CMAPSSData.zip") if p != zip_path]
         if inner_zips:
             inner = inner_zips[0]
             logger.info(f"  Found nested zip: {inner.relative_to(output_dir)}")
@@ -262,6 +264,7 @@ def download_cmapss(output_dir: Path) -> Path:
             inner_parent = inner.parent
             if inner_parent != output_dir:
                 import shutil
+
                 shutil.rmtree(inner_parent, ignore_errors=True)
 
     zip_path.unlink(missing_ok=True)
@@ -323,6 +326,7 @@ def load_cmapss(
 
     logger.info(f"✓ Loaded {subset}: {len(train_df):,} train, {len(test_df):,} test samples")
     return dataset
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

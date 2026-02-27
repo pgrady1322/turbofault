@@ -57,7 +57,9 @@ class TestPermutationImportance:
 
         model = DummyModel()
         result = permutation_importance(
-            model, X, y,
+            model,
+            X,
+            y,
             feature_names=["a", "b", "c", "d", "e"],
             n_repeats=5,
         )
@@ -100,15 +102,22 @@ class TestPermutationImportance:
 
 class TestSensorContributionAnalysis:
     def _make_importance_df(self):
-        return pd.DataFrame({
-            "feature": [
-                "sensor_2", "sensor_2_roll_mean_5", "sensor_2_lag_1",
-                "sensor_7", "sensor_7_delta_1",
-                "sensor_11_ewma_10", "sensor_11",
-                "op_setting_1", "cycle_norm",
-            ],
-            "importance_mean": [0.5, 0.3, 0.2, 0.4, 0.15, 0.35, 0.25, 0.1, 0.05],
-        })
+        return pd.DataFrame(
+            {
+                "feature": [
+                    "sensor_2",
+                    "sensor_2_roll_mean_5",
+                    "sensor_2_lag_1",
+                    "sensor_7",
+                    "sensor_7_delta_1",
+                    "sensor_11_ewma_10",
+                    "sensor_11",
+                    "op_setting_1",
+                    "cycle_norm",
+                ],
+                "importance_mean": [0.5, 0.3, 0.2, 0.4, 0.15, 0.35, 0.25, 0.1, 0.05],
+            }
+        )
 
     def test_sensor_ranking(self):
         df = self._make_importance_df()
@@ -141,42 +150,51 @@ class TestSensorContributionAnalysis:
         assert len(result["top_features"]) == 3
 
     def test_shap_column(self):
-        df = pd.DataFrame({
-            "feature": ["sensor_2", "sensor_7"],
-            "mean_abs_shap": [0.5, 0.3],
-        })
+        df = pd.DataFrame(
+            {
+                "feature": ["sensor_2", "sensor_7"],
+                "mean_abs_shap": [0.5, 0.3],
+            }
+        )
         result = sensor_contribution_analysis(df)
         assert "sensor_ranking" in result
 
 
 class TestGenerateReport:
     def test_report_structure(self):
-        importance_df = pd.DataFrame({
-            "feature": ["sensor_2", "sensor_7", "sensor_11"],
-            "importance_mean": [0.5, 0.3, 0.2],
-        })
+        importance_df = pd.DataFrame(
+            {
+                "feature": ["sensor_2", "sensor_7", "sensor_11"],
+                "importance_mean": [0.5, 0.3, 0.2],
+            }
+        )
         sensor_analysis = {
-            "sensor_ranking": pd.DataFrame({
-                "total_importance": [0.5, 0.3, 0.2],
-                "avg_importance": [0.5, 0.3, 0.2],
-                "n_features": [1, 1, 1],
-            }, index=["sensor_2", "sensor_7", "sensor_11"]),
-            "feature_type_ranking": pd.DataFrame({
-                "total_importance": [1.0],
-                "avg_importance": [0.33],
-                "n_features": [3],
-            }, index=["raw"]),
+            "sensor_ranking": pd.DataFrame(
+                {
+                    "total_importance": [0.5, 0.3, 0.2],
+                    "avg_importance": [0.5, 0.3, 0.2],
+                    "n_features": [1, 1, 1],
+                },
+                index=["sensor_2", "sensor_7", "sensor_11"],
+            ),
+            "feature_type_ranking": pd.DataFrame(
+                {
+                    "total_importance": [1.0],
+                    "avg_importance": [0.33],
+                    "n_features": [3],
+                },
+                index=["raw"],
+            ),
             "top_features": importance_df.copy(),
         }
 
-        report = generate_explanation_report(
-            "XGBoost", importance_df, sensor_analysis, top_n=3
-        )
+        report = generate_explanation_report("XGBoost", importance_df, sensor_analysis, top_n=3)
 
         assert "XGBoost" in report
         assert "sensor_2" in report
         assert "Top Sensors" in report
         assert "Feature Type Breakdown" in report
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

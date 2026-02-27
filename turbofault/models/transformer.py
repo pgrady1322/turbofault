@@ -34,9 +34,7 @@ class PositionalEncoding(nn.Module):
 
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
-        )
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
         pe[:, 0::2] = torch.sin(position * div_term)
         if d_model % 2 == 0:
             pe[:, 1::2] = torch.cos(position * div_term)
@@ -95,9 +93,7 @@ class TransformerRUL(nn.Module):
             batch_first=True,
             activation="gelu",
         )
-        self.transformer_encoder = nn.TransformerEncoder(
-            encoder_layer, num_layers=n_layers
-        )
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
 
         # Regression head
         self.fc = nn.Sequential(
@@ -145,6 +141,7 @@ class TransformerRUL(nn.Module):
     @property
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

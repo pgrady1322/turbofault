@@ -70,14 +70,14 @@ class CNN1DModel(nn.Module):
     ):
         super().__init__()
 
-        assert len(channels) == len(kernel_sizes) == len(pool_sizes), (
-            "channels, kernel_sizes, and pool_sizes must have the same length"
-        )
+        assert (
+            len(channels) == len(kernel_sizes) == len(pool_sizes)
+        ), "channels, kernel_sizes, and pool_sizes must have the same length"
 
         # Build conv blocks
         blocks = []
         in_ch = input_dim
-        for out_ch, ks, ps in zip(channels, kernel_sizes, pool_sizes):
+        for out_ch, ks, ps in zip(channels, kernel_sizes, pool_sizes, strict=True):
             blocks.append(ConvBlock(in_ch, out_ch, ks, ps))
             in_ch = out_ch
         self.conv_layers = nn.Sequential(*blocks)
@@ -107,15 +107,16 @@ class CNN1DModel(nn.Module):
         # Transpose to (batch, n_features, seq_len) for Conv1D
         x = x.permute(0, 2, 1)
 
-        x = self.conv_layers(x)           # (batch, channels[-1], reduced_len)
-        x = self.adaptive_pool(x)          # (batch, channels[-1], 1)
-        x = x.squeeze(-1)                  # (batch, channels[-1])
+        x = self.conv_layers(x)  # (batch, channels[-1], reduced_len)
+        x = self.adaptive_pool(x)  # (batch, channels[-1], 1)
+        x = x.squeeze(-1)  # (batch, channels[-1])
 
         return self.fc(x)
 
     @property
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

@@ -19,10 +19,8 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
 
 import click
-import numpy as np
 import yaml
 
 from turbofault import __version__
@@ -43,7 +41,7 @@ def _setup_logging(verbose: bool) -> None:
     )
 
 
-def _load_config(config_path: Optional[str]) -> dict:
+def _load_config(config_path: str | None) -> dict:
     if config_path is None:
         return {}
     path = Path(config_path)
@@ -63,7 +61,8 @@ def main(verbose: bool) -> None:
 
 @main.command()
 @click.option(
-    "-o", "--output-dir",
+    "-o",
+    "--output-dir",
     default="data",
     show_default=True,
     help="Directory to save the C-MAPSS dataset.",
@@ -78,30 +77,55 @@ def download(output_dir: str) -> None:
 
 
 @main.command()
-@click.option("-m", "--model", "model_type", required=True,
-              type=click.Choice(sorted(ALL_MODELS)), help="Model type.")
-@click.option("-s", "--subset", default="FD001", show_default=True,
-              type=click.Choice(["FD001", "FD002", "FD003", "FD004"]),
-              help="C-MAPSS subset.")
-@click.option("-d", "--data-dir", default="data/CMAPSSData", show_default=True,
-              help="Path to CMAPSSData/ directory.")
-@click.option("-c", "--config", "config_path", default=None,
-              help="YAML config file for model hyperparameters.")
-@click.option("--max-rul", default=125, show_default=True,
-              help="Piecewise-linear RUL cap.")
-@click.option("--window-size", default=30, show_default=True,
-              help="Sliding window size (deep models only).")
-@click.option("--epochs", default=100, show_default=True,
-              help="Training epochs (deep models only).")
-@click.option("--batch-size", default=256, show_default=True,
-              help="Batch size (deep models only).")
-@click.option("--save-dir", default="trained_models", show_default=True,
-              help="Directory to save trained model.")
+@click.option(
+    "-m",
+    "--model",
+    "model_type",
+    required=True,
+    type=click.Choice(sorted(ALL_MODELS)),
+    help="Model type.",
+)
+@click.option(
+    "-s",
+    "--subset",
+    default="FD001",
+    show_default=True,
+    type=click.Choice(["FD001", "FD002", "FD003", "FD004"]),
+    help="C-MAPSS subset.",
+)
+@click.option(
+    "-d",
+    "--data-dir",
+    default="data/CMAPSSData",
+    show_default=True,
+    help="Path to CMAPSSData/ directory.",
+)
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    default=None,
+    help="YAML config file for model hyperparameters.",
+)
+@click.option("--max-rul", default=125, show_default=True, help="Piecewise-linear RUL cap.")
+@click.option(
+    "--window-size", default=30, show_default=True, help="Sliding window size (deep models only)."
+)
+@click.option(
+    "--epochs", default=100, show_default=True, help="Training epochs (deep models only)."
+)
+@click.option("--batch-size", default=256, show_default=True, help="Batch size (deep models only).")
+@click.option(
+    "--save-dir",
+    default="trained_models",
+    show_default=True,
+    help="Directory to save trained model.",
+)
 def train(
     model_type: str,
     subset: str,
     data_dir: str,
-    config_path: Optional[str],
+    config_path: str | None,
     max_rul: int,
     window_size: int,
     epochs: int,
@@ -133,23 +157,29 @@ def train(
         model_obj = _build_tabular_model(model_type, config)
 
         from turbofault.training.trainer import train_tabular
-        result = train_tabular(model_obj, data["X_train"], data["y_train"],
-                               data["X_val"], data["y_val"])
+
+        result = train_tabular(
+            model_obj, data["X_train"], data["y_train"], data["X_val"], data["y_val"]
+        )
 
         preds = result["model"].predict(data["X_test"])
         metrics = evaluate_rul(data["y_test"], preds, prefix="test_")
 
     elif model_type in DEEP_MODELS:
-        data = prepare_sequence_data(
-            dataset, feature_cols, window_size=window_size
-        )
+        data = prepare_sequence_data(dataset, feature_cols, window_size=window_size)
         model_obj = _build_deep_model(model_type, data["X_train"].shape[2], config)
 
         from turbofault.training.trainer import predict_deep, train_deep
+
         result = train_deep(
-            model_obj, data["X_train"], data["y_train"],
-            data["X_val"], data["y_val"],
-            epochs=epochs, batch_size=batch_size, save_path=save_path,
+            model_obj,
+            data["X_train"],
+            data["y_train"],
+            data["X_val"],
+            data["y_val"],
+            epochs=epochs,
+            batch_size=batch_size,
+            save_path=save_path,
         )
 
         preds = predict_deep(result["model"], data["X_test"])
@@ -162,18 +192,29 @@ def train(
         json.dump(metrics, f, indent=2)
 
     click.echo(f"\n✓ Results saved to {results_path}")
-    click.echo(f"  RMSE: {metrics['test_rmse']:.2f}  |  "
-               f"NASA Score: {metrics['test_nasa_score']:.2f}")
+    click.echo(
+        f"  RMSE: {metrics['test_rmse']:.2f}  |  " f"NASA Score: {metrics['test_nasa_score']:.2f}"
+    )
 
 
 @main.command()
-@click.option("-m", "--model", "model_type", required=True,
-              type=click.Choice(sorted(ALL_MODELS)), help="Model type.")
-@click.option("-s", "--subset", default="FD001", show_default=True,
-              type=click.Choice(["FD001", "FD002", "FD003", "FD004"]))
+@click.option(
+    "-m",
+    "--model",
+    "model_type",
+    required=True,
+    type=click.Choice(sorted(ALL_MODELS)),
+    help="Model type.",
+)
+@click.option(
+    "-s",
+    "--subset",
+    default="FD001",
+    show_default=True,
+    type=click.Choice(["FD001", "FD002", "FD003", "FD004"]),
+)
 @click.option("-d", "--data-dir", default="data/CMAPSSData", show_default=True)
-@click.option("-n", "--n-trials", default=50, show_default=True,
-              help="Number of Optuna trials.")
+@click.option("-n", "--n-trials", default=50, show_default=True, help="Number of Optuna trials.")
 def tune(
     model_type: str,
     subset: str,
@@ -210,23 +251,42 @@ def tune(
 
 
 @main.command()
-@click.option("-m", "--model", "model_type", required=True,
-              type=click.Choice(sorted(ALL_MODELS)), help="Model type.")
-@click.option("-s", "--subset", default="FD001", show_default=True,
-              type=click.Choice(["FD001", "FD002", "FD003", "FD004"]),
-              help="C-MAPSS subset.")
-@click.option("-d", "--data-dir", default="data/CMAPSSData", show_default=True,
-              help="Path to CMAPSSData/ directory.")
-@click.option("-c", "--config", "config_path", default=None,
-              help="YAML config file for model hyperparameters.")
-@click.option("--max-rul", default=125, show_default=True,
-              help="Piecewise-linear RUL cap.")
-@click.option("--window-size", default=30, show_default=True,
-              help="Sliding window size (deep models only).")
-@click.option("--model-path", default=None,
-              help="Path to saved model checkpoint (deep models).")
-@click.option("-o", "--output", "output_path", default=None,
-              help="Save results JSON to this path.")
+@click.option(
+    "-m",
+    "--model",
+    "model_type",
+    required=True,
+    type=click.Choice(sorted(ALL_MODELS)),
+    help="Model type.",
+)
+@click.option(
+    "-s",
+    "--subset",
+    default="FD001",
+    show_default=True,
+    type=click.Choice(["FD001", "FD002", "FD003", "FD004"]),
+    help="C-MAPSS subset.",
+)
+@click.option(
+    "-d",
+    "--data-dir",
+    default="data/CMAPSSData",
+    show_default=True,
+    help="Path to CMAPSSData/ directory.",
+)
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    default=None,
+    help="YAML config file for model hyperparameters.",
+)
+@click.option("--max-rul", default=125, show_default=True, help="Piecewise-linear RUL cap.")
+@click.option(
+    "--window-size", default=30, show_default=True, help="Sliding window size (deep models only)."
+)
+@click.option("--model-path", default=None, help="Path to saved model checkpoint (deep models).")
+@click.option("-o", "--output", "output_path", default=None, help="Save results JSON to this path.")
 def evaluate(
     model_type: str,
     subset: str,
@@ -263,19 +323,24 @@ def evaluate(
 
         if model_path:
             import torch
-            model_obj.load_state_dict(
-                torch.load(model_path, map_location="cpu", weights_only=True)
-            )
+
+            model_obj.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
             click.echo(f"✓ Loaded model from {model_path}")
         else:
             from turbofault.training.trainer import train_deep
+
             result = train_deep(
-                model_obj, data["X_train"], data["y_train"],
-                data["X_val"], data["y_val"], epochs=100,
+                model_obj,
+                data["X_train"],
+                data["y_train"],
+                data["X_val"],
+                data["y_val"],
+                epochs=100,
             )
             model_obj = result["model"]
 
         from turbofault.training.trainer import predict_deep
+
         preds = predict_deep(model_obj, data["X_test"])
         metrics = evaluate_rul(data["y_test"], preds, prefix="test_")
     else:
@@ -302,24 +367,46 @@ def evaluate(
 
 
 @main.command()
-@click.option("-m", "--model", "model_type", required=True,
-              type=click.Choice(sorted(ALL_MODELS)), help="Model type.")
-@click.option("-s", "--subset", default="FD001", show_default=True,
-              type=click.Choice(["FD001", "FD002", "FD003", "FD004"]),
-              help="C-MAPSS subset.")
-@click.option("-d", "--data-dir", default="data/CMAPSSData", show_default=True,
-              help="Path to CMAPSSData/ directory.")
-@click.option("-c", "--config", "config_path", default=None,
-              help="YAML config file for model hyperparameters.")
-@click.option("--max-rul", default=125, show_default=True,
-              help="Piecewise-linear RUL cap.")
-@click.option("--method", default="permutation", show_default=True,
-              type=click.Choice(["permutation", "shap"]),
-              help="Explanation method.")
-@click.option("--top-n", default=20, show_default=True,
-              help="Number of top features to show.")
-@click.option("-o", "--output", "output_path", default=None,
-              help="Save report to this path.")
+@click.option(
+    "-m",
+    "--model",
+    "model_type",
+    required=True,
+    type=click.Choice(sorted(ALL_MODELS)),
+    help="Model type.",
+)
+@click.option(
+    "-s",
+    "--subset",
+    default="FD001",
+    show_default=True,
+    type=click.Choice(["FD001", "FD002", "FD003", "FD004"]),
+    help="C-MAPSS subset.",
+)
+@click.option(
+    "-d",
+    "--data-dir",
+    default="data/CMAPSSData",
+    show_default=True,
+    help="Path to CMAPSSData/ directory.",
+)
+@click.option(
+    "-c",
+    "--config",
+    "config_path",
+    default=None,
+    help="YAML config file for model hyperparameters.",
+)
+@click.option("--max-rul", default=125, show_default=True, help="Piecewise-linear RUL cap.")
+@click.option(
+    "--method",
+    default="permutation",
+    show_default=True,
+    type=click.Choice(["permutation", "shap"]),
+    help="Explanation method.",
+)
+@click.option("--top-n", default=20, show_default=True, help="Number of top features to show.")
+@click.option("-o", "--output", "output_path", default=None, help="Save report to this path.")
 def explain(
     model_type: str,
     subset: str,
@@ -342,8 +429,10 @@ def explain(
     )
 
     if model_type not in TABULAR_MODELS:
-        click.echo(f"⚠ Explanation currently supports tabular models only "
-                    f"({', '.join(sorted(TABULAR_MODELS))})")
+        click.echo(
+            f"⚠ Explanation currently supports tabular models only "
+            f"({', '.join(sorted(TABULAR_MODELS))})"
+        )
         sys.exit(1)
 
     config = _load_config(config_path)
@@ -362,12 +451,15 @@ def explain(
     # Explain
     if method == "permutation":
         importance_df = permutation_importance(
-            model_obj, data["X_test"], data["y_test"],
+            model_obj,
+            data["X_test"],
+            data["y_test"],
             feature_names=data["feature_columns"],
         )
     elif method == "shap":
         shap_result = shap_feature_importance(
-            model_obj, data["X_test"],
+            model_obj,
+            data["X_test"],
             feature_names=data["feature_columns"],
         )
         importance_df = shap_result["feature_importance"]
@@ -390,12 +482,15 @@ def _build_tabular_model(model_type: str, config: dict):
     """Instantiate a tabular model from type + config."""
     if model_type == "xgboost":
         from turbofault.models.xgboost_baseline import XGBoostRUL
+
         return XGBoostRUL(**config.get("model", {}))
     elif model_type == "random_forest":
         from turbofault.models.xgboost_baseline import RandomForestRUL
+
         return RandomForestRUL(**config.get("model", {}))
     elif model_type == "ridge":
         from turbofault.models.xgboost_baseline import RidgeRUL
+
         return RidgeRUL(**config.get("model", {}))
     raise ValueError(f"Unknown tabular model: {model_type}")
 
@@ -407,17 +502,22 @@ def _build_deep_model(model_type: str, input_dim: int, config: dict):
 
     if model_type == "lstm":
         from turbofault.models.lstm import LSTMModel
+
         return LSTMModel(**model_config)
     elif model_type == "gru":
         from turbofault.models.lstm import GRUModel
+
         return GRUModel(**model_config)
     elif model_type == "transformer":
         from turbofault.models.transformer import TransformerRUL
+
         return TransformerRUL(**model_config)
     elif model_type == "cnn1d":
         from turbofault.models.cnn1d import CNN1DModel
+
         return CNN1DModel(**model_config)
     raise ValueError(f"Unknown deep model: {model_type}")
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

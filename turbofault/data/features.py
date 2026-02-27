@@ -15,9 +15,7 @@ License: MIT License - See LICENSE
 """
 
 import logging
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 from turbofault.data.dataset import OPERATIONAL_SETTINGS, SENSOR_COLUMNS
@@ -27,7 +25,7 @@ logger = logging.getLogger("turbofault")
 
 def add_rolling_features(
     df: pd.DataFrame,
-    sensors: Optional[list[str]] = None,
+    sensors: list[str] | None = None,
     windows: tuple[int, ...] = (5, 10, 20),
     statistics: tuple[str, ...] = ("mean", "std"),
 ) -> pd.DataFrame:
@@ -53,21 +51,22 @@ def add_rolling_features(
                 col_name = f"{sensor}_roll{window}_{stat}"
                 grouped = df.groupby("engine_id")[sensor]
                 rolled = grouped.transform(
-                    lambda x: x.rolling(window=window, min_periods=1).agg(stat)
+                    lambda x, w=window, s=stat: x.rolling(window=w, min_periods=1).agg(s)
                 )
                 cols[col_name] = rolled
             new_cols = pd.DataFrame(cols, index=df.index)
             df = pd.concat([df, new_cols], axis=1)
 
     n_features = sum(len(sensors) for _ in windows for _ in statistics)
-    logger.info(f"✓ Added {n_features} rolling features "
-                f"(windows={windows}, stats={statistics})")
+    logger.info(
+        f"✓ Added {n_features} rolling features " f"(windows={windows}, stats={statistics})"
+    )
     return df
 
 
 def add_lag_features(
     df: pd.DataFrame,
-    sensors: Optional[list[str]] = None,
+    sensors: list[str] | None = None,
     lags: tuple[int, ...] = (1, 3, 5),
 ) -> pd.DataFrame:
     """
@@ -91,9 +90,7 @@ def add_lag_features(
 
     # Fill NaN at start of each engine's time-series with first valid value
     lag_cols = [c for c in df.columns if "_lag" in c]
-    df[lag_cols] = df.groupby("engine_id")[lag_cols].transform(
-        lambda x: x.bfill()
-    )
+    df[lag_cols] = df.groupby("engine_id")[lag_cols].transform(lambda x: x.bfill())
 
     logger.info(f"✓ Added {len(sensors) * len(lags)} lag features (lags={lags})")
     return df
@@ -101,7 +98,7 @@ def add_lag_features(
 
 def add_delta_features(
     df: pd.DataFrame,
-    sensors: Optional[list[str]] = None,
+    sensors: list[str] | None = None,
     periods: tuple[int, ...] = (1, 5),
 ) -> pd.DataFrame:
     """
@@ -126,14 +123,13 @@ def add_delta_features(
     delta_cols = [c for c in df.columns if "_delta" in c]
     df[delta_cols] = df[delta_cols].fillna(0.0)
 
-    logger.info(f"✓ Added {len(sensors) * len(periods)} delta features "
-                f"(periods={periods})")
+    logger.info(f"✓ Added {len(sensors) * len(periods)} delta features " f"(periods={periods})")
     return df
 
 
 def add_ewma_features(
     df: pd.DataFrame,
-    sensors: Optional[list[str]] = None,
+    sensors: list[str] | None = None,
     spans: tuple[int, ...] = (10, 20),
 ) -> pd.DataFrame:
     """
@@ -154,7 +150,7 @@ def add_ewma_features(
         for sensor in sensors:
             col_name = f"{sensor}_ewma{span}"
             df[col_name] = df.groupby("engine_id")[sensor].transform(
-                lambda x: x.ewm(span=span, min_periods=1).mean()
+                lambda x, s=span: x.ewm(span=s, min_periods=1).mean()
             )
 
     logger.info(f"✓ Added {len(sensors) * len(spans)} EWMA features (spans={spans})")
@@ -185,7 +181,7 @@ def add_cycle_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def build_feature_set(
     df: pd.DataFrame,
-    sensors: Optional[list[str]] = None,
+    sensors: list[str] | None = None,
     rolling_windows: tuple[int, ...] = (5, 10, 20),
     rolling_stats: tuple[str, ...] = ("mean", "std"),
     lags: tuple[int, ...] = (1, 3, 5),
@@ -232,8 +228,10 @@ def build_feature_set(
     # Count total engineered features
     base_cols = {"engine_id", "cycle", "rul"} | set(OPERATIONAL_SETTINGS) | set(SENSOR_COLUMNS)
     engineered_cols = [c for c in df.columns if c not in base_cols]
-    logger.info(f"✓ Feature set complete: {len(engineered_cols)} engineered features "
-                f"+ {len(sensors)} raw sensors")
+    logger.info(
+        f"✓ Feature set complete: {len(engineered_cols)} engineered features "
+        f"+ {len(sensors)} raw sensors"
+    )
 
     return df
 
@@ -261,6 +259,7 @@ def get_feature_columns(
         exclude.update(SENSOR_COLUMNS)
 
     return [c for c in df.columns if c not in exclude]
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

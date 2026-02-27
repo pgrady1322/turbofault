@@ -17,7 +17,6 @@ License: MIT License - See LICENSE
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -45,7 +44,7 @@ def plot_sensor_traces(
     engine_ids: list[int],
     sensors: list[str],
     figsize: tuple[int, int] = (14, 8),
-    save_path: Optional[Path] = None,
+    save_path: Path | None = None,
 ) -> plt.Figure:
     """
     Plot sensor readings over cycle for selected engines.
@@ -89,10 +88,10 @@ def plot_sensor_traces(
 def plot_rul_predictions(
     y_true: np.ndarray,
     y_pred: np.ndarray,
-    engine_ids: Optional[np.ndarray] = None,
+    engine_ids: np.ndarray | None = None,
     title: str = "RUL Prediction vs. Ground Truth",
     figsize: tuple[int, int] = (12, 5),
-    save_path: Optional[Path] = None,
+    save_path: Path | None = None,
 ) -> plt.Figure:
     """
     Scatter plot of predicted vs. true RUL with diagonal reference line.
@@ -135,8 +134,14 @@ def plot_rul_predictions(
     # Annotate with early/late
     n_early = (residuals > 0).sum()
     n_late = (residuals < 0).sum()
-    ax2.text(0.02, 0.95, f"Early: {n_early}  Late: {n_late}",
-             transform=ax2.transAxes, fontsize=10, verticalalignment="top")
+    ax2.text(
+        0.02,
+        0.95,
+        f"Early: {n_early}  Late: {n_late}",
+        transform=ax2.transAxes,
+        fontsize=10,
+        verticalalignment="top",
+    )
 
     fig.tight_layout()
 
@@ -153,7 +158,7 @@ def plot_feature_importance(
     top_n: int = 20,
     title: str = "Feature Importance (XGBoost)",
     figsize: tuple[int, int] = (10, 8),
-    save_path: Optional[Path] = None,
+    save_path: Path | None = None,
 ) -> plt.Figure:
     """
     Horizontal bar chart of top-N feature importances.
@@ -191,7 +196,7 @@ def plot_training_history(
     history: dict[str, list[float]],
     title: str = "Training History",
     figsize: tuple[int, int] = (10, 5),
-    save_path: Optional[Path] = None,
+    save_path: Path | None = None,
 ) -> plt.Figure:
     """
     Plot training and validation loss curves.
@@ -215,8 +220,7 @@ def plot_training_history(
         best_epoch = np.argmin(history["val_loss"]) + 1
         best_val = min(history["val_loss"])
         ax.axvline(best_epoch, color="gray", linestyle=":", alpha=0.7)
-        ax.annotate(f"Best: {best_val:.4f}", xy=(best_epoch, best_val),
-                    fontsize=9, ha="left")
+        ax.annotate(f"Best: {best_val:.4f}", xy=(best_epoch, best_val), fontsize=9, ha="left")
 
     ax.set_xlabel("Epoch")
     ax.set_ylabel("MSE Loss")
@@ -235,7 +239,7 @@ def plot_model_comparison(
     results: dict[str, dict[str, float]],
     metrics: tuple[str, ...] = ("rmse", "mae", "nasa_score"),
     figsize: tuple[int, int] = (12, 5),
-    save_path: Optional[Path] = None,
+    save_path: Path | None = None,
 ) -> plt.Figure:
     """
     Bar chart comparing multiple models across metrics.
@@ -258,20 +262,23 @@ def plot_model_comparison(
     models = list(results.keys())
     colors = plt.cm.Set2(np.linspace(0, 1, len(models)))
 
-    for ax, metric in zip(axes, metrics):
-        values = [
-            results[m].get(metric, results[m].get(f"test_{metric}", 0))
-            for m in models
-        ]
+    for ax, metric in zip(axes, metrics, strict=True):
+        values = [results[m].get(metric, results[m].get(f"test_{metric}", 0)) for m in models]
         bars = ax.bar(models, values, color=colors, edgecolor="black", alpha=0.8)
         ax.set_title(metric.upper())
         ax.set_ylabel(metric.upper())
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
 
         # Annotate bars
-        for bar, val in zip(bars, values):
-            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                    f"{val:.1f}", ha="center", va="bottom", fontsize=9)
+        for bar, val in zip(bars, values, strict=True):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height(),
+                f"{val:.1f}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
 
     fig.suptitle("Model Comparison", fontsize=14)
     fig.tight_layout()
@@ -281,6 +288,7 @@ def plot_model_comparison(
         logger.info(f"✓ Saved model comparison → {save_path}")
 
     return fig
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

@@ -8,10 +8,9 @@ Anthropic Claude Opus 4.6 used for code formatting and cleanup assistance.
 License: MIT License - See LICENSE
 """
 
-import pytest
 from click.testing import CliRunner
 
-from turbofault.cli import main, ALL_MODELS, TABULAR_MODELS, DEEP_MODELS
+from turbofault.cli import ALL_MODELS, DEEP_MODELS, TABULAR_MODELS, main
 
 
 class TestCLISetup:
@@ -106,9 +105,9 @@ class TestExplainCommand:
     def test_explain_rejects_deep_models(self):
         runner = CliRunner()
         # Deep models not supported for explain — exit code 1
-        result = runner.invoke(main, ["explain", "-m", "lstm",
-                                      "-d", "/nonexistent/path"])
+        result = runner.invoke(main, ["explain", "-m", "lstm", "-d", "/nonexistent/path"])
         assert result.exit_code != 0
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

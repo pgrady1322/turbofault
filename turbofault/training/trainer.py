@@ -12,12 +12,17 @@ Anthropic Claude Opus 4.6 used for code formatting and cleanup assistance.
 License: MIT License - See LICENSE
 """
 
+from __future__ import annotations
+
 import logging
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import torch
 
 logger = logging.getLogger("turbofault")
 
@@ -26,8 +31,8 @@ def train_tabular(
     model: Any,
     X_train: np.ndarray,
     y_train: np.ndarray,
-    X_val: Optional[np.ndarray] = None,
-    y_val: Optional[np.ndarray] = None,
+    X_val: np.ndarray | None = None,
+    y_val: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """
     Train a tabular model (XGBoost, RF, Ridge).
@@ -55,18 +60,18 @@ def train_tabular(
 
 
 def train_deep(
-    model: "torch.nn.Module",
+    model: torch.nn.Module,
     X_train: np.ndarray,
     y_train: np.ndarray,
-    X_val: Optional[np.ndarray] = None,
-    y_val: Optional[np.ndarray] = None,
+    X_val: np.ndarray | None = None,
+    y_val: np.ndarray | None = None,
     epochs: int = 100,
     batch_size: int = 256,
     learning_rate: float = 1e-3,
     weight_decay: float = 1e-4,
     patience: int = 15,
     device: str = "auto",
-    save_path: Optional[Path] = None,
+    save_path: Path | None = None,
 ) -> dict[str, Any]:
     """
     PyTorch training loop for sequence models.
@@ -120,9 +125,7 @@ def train_deep(
         val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
 
     # Optimizer + loss
-    optimizer = torch.optim.AdamW(
-        model.parameters(), lr=learning_rate, weight_decay=weight_decay
-    )
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=patience // 3
     )
@@ -180,8 +183,10 @@ def train_deep(
             else:
                 no_improve += 1
                 if no_improve >= patience:
-                    logger.info(f"Early stopping at epoch {epoch} "
-                                f"(best={best_epoch}, val_loss={best_val_loss:.4f})")
+                    logger.info(
+                        f"Early stopping at epoch {epoch} "
+                        f"(best={best_epoch}, val_loss={best_val_loss:.4f})"
+                    )
                     break
 
         # Logging
@@ -208,7 +213,7 @@ def train_deep(
 
 
 def predict_deep(
-    model: "torch.nn.Module",
+    model: torch.nn.Module,
     X: np.ndarray,
     batch_size: int = 256,
     device: str = "auto",
@@ -251,6 +256,7 @@ def predict_deep(
             preds.append(out.cpu().numpy())
 
     return np.concatenate(preds).flatten()
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

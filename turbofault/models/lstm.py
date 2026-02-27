@@ -130,5 +130,6 @@ class GRUModel(nn.Module):
     def num_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
+
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

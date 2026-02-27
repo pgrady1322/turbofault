@@ -14,12 +14,12 @@ License: MIT License - See LICENSE
 
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import xgboost as xgb
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.linear_model import Ridge
 
 logger = logging.getLogger("turbofault")
 
@@ -55,28 +55,28 @@ class XGBoostRUL:
         }
         self.early_stopping_rounds = early_stopping_rounds
         self.model = xgb.XGBRegressor(**self.params)
-        self.feature_importance_: Optional[np.ndarray] = None
+        self.feature_importance_: np.ndarray | None = None
 
     def fit(
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        X_val: Optional[np.ndarray] = None,
-        y_val: Optional[np.ndarray] = None,
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
     ) -> "XGBoostRUL":
         """Fit the XGBoost model with optional early stopping."""
         fit_params: dict[str, Any] = {}
         if X_val is not None and y_val is not None:
             fit_params["eval_set"] = [(X_val, y_val)]
-            self.model.set_params(
-                early_stopping_rounds=self.early_stopping_rounds
-            )
+            self.model.set_params(early_stopping_rounds=self.early_stopping_rounds)
             fit_params["verbose"] = 50
 
         self.model.fit(X_train, y_train, **fit_params)
         self.feature_importance_ = self.model.feature_importances_
-        logger.info(f"✓ XGBoost fitted — best iteration: "
-                    f"{self.model.best_iteration if hasattr(self.model, 'best_iteration') else 'N/A'}")
+        logger.info(
+            f"✓ XGBoost fitted — best iteration: "
+            f"{self.model.best_iteration if hasattr(self.model, 'best_iteration') else 'N/A'}"
+        )
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -99,14 +99,14 @@ class XGBoostRUL:
 
     def get_feature_importance(
         self,
-        feature_names: Optional[list[str]] = None,
+        feature_names: list[str] | None = None,
         top_n: int = 20,
     ) -> list[tuple[str, float]]:
         """Return top-N features by importance."""
         if self.feature_importance_ is None:
             raise RuntimeError("Model not yet fitted.")
         names = feature_names or [f"f{i}" for i in range(len(self.feature_importance_))]
-        pairs = list(zip(names, self.feature_importance_))
+        pairs = list(zip(names, self.feature_importance_, strict=False))
         pairs.sort(key=lambda x: x[1], reverse=True)
         return pairs[:top_n]
 
@@ -136,8 +136,8 @@ class RandomForestRUL:
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        X_val: Optional[np.ndarray] = None,
-        y_val: Optional[np.ndarray] = None,
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
     ) -> "RandomForestRUL":
         """Fit the Random Forest model."""
         self.model.fit(X_train, y_train)
@@ -158,8 +158,8 @@ class RidgeRUL:
         self,
         X_train: np.ndarray,
         y_train: np.ndarray,
-        X_val: Optional[np.ndarray] = None,
-        y_val: Optional[np.ndarray] = None,
+        X_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
     ) -> "RidgeRUL":
         # Ridge cannot handle NaN (unlike tree-based models); fill with 0
         X_clean = np.nan_to_num(X_train, nan=0.0, posinf=0.0, neginf=0.0)
@@ -170,6 +170,7 @@ class RidgeRUL:
     def predict(self, X: np.ndarray) -> np.ndarray:
         X_clean = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
         return self.model.predict(X_clean)
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

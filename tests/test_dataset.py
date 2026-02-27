@@ -10,15 +10,14 @@ License: MIT License - See LICENSE
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from turbofault.data.dataset import (
     ALL_COLUMNS,
-    CMAPSSDataset,
     LOW_VARIANCE_SENSORS,
     OPERATIONAL_SETTINGS,
     SENSOR_COLUMNS,
     SUBSET_INFO,
+    CMAPSSDataset,
 )
 
 
@@ -148,6 +147,7 @@ class TestSyntheticDataIntegrity:
         ds = _make_test_dataset(n_engines=5)
         assert ds.train_df["engine_id"].nunique() == 5
         assert ds.test_df["engine_id"].nunique() == 5
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

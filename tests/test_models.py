@@ -48,9 +48,7 @@ class TestXGBoostRUL:
         model = XGBoostRUL(n_estimators=10)
         model.fit(X, y)
 
-        top = model.get_feature_importance(
-            feature_names=["a", "b", "c", "d", "e"], top_n=3
-        )
+        top = model.get_feature_importance(feature_names=["a", "b", "c", "d", "e"], top_n=3)
         assert len(top) == 3
         assert all(isinstance(t, tuple) for t in top)
 
@@ -167,9 +165,7 @@ class TestTransformerModel:
     def test_forward_shape(self):
         from turbofault.models.transformer import TransformerRUL
 
-        model = TransformerRUL(
-            input_dim=14, d_model=32, n_heads=4, n_layers=2, d_ff=64
-        )
+        model = TransformerRUL(input_dim=14, d_model=32, n_heads=4, n_layers=2, d_ff=64)
         x = torch.randn(4, 30, 14)
         out = model(x)
         assert out.shape == (4, 1)
@@ -189,9 +185,7 @@ class TestCNN1DModel:
     def test_forward_shape(self):
         from turbofault.models.cnn1d import CNN1DModel
 
-        model = CNN1DModel(
-            input_dim=14, channels=(32, 64), kernel_sizes=(5, 3), pool_sizes=(2, 2)
-        )
+        model = CNN1DModel(input_dim=14, channels=(32, 64), kernel_sizes=(5, 3), pool_sizes=(2, 2))
         x = torch.randn(4, 30, 14)
         out = model(x)
         assert out.shape == (4, 1)
@@ -201,6 +195,7 @@ class TestCNN1DModel:
 
         model = CNN1DModel(input_dim=14)
         assert model.num_parameters > 0
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

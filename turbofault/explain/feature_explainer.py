@@ -14,11 +14,15 @@ Anthropic Claude Opus 4.6 used for code formatting and cleanup assistance.
 License: MIT License - See LICENSE
 """
 
+from __future__ import annotations
+
 import logging
-from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import torch
 import pandas as pd
 
 logger = logging.getLogger("turbofault")
@@ -26,11 +30,12 @@ logger = logging.getLogger("turbofault")
 
 # ── Permutation Importance (model-agnostic) ─────────────────────────
 
+
 def permutation_importance(
     model: Any,
     X: np.ndarray,
     y: np.ndarray,
-    feature_names: Optional[list[str]] = None,
+    feature_names: list[str] | None = None,
     n_repeats: int = 10,
     metric: str = "rmse",
     random_state: int = 42,
@@ -73,11 +78,13 @@ def permutation_importance(
             perm_error = _compute_error(y, perm_preds, metric)
             importances[feat_idx, rep] = perm_error - baseline_error
 
-    results = pd.DataFrame({
-        "feature": feature_names,
-        "importance_mean": importances.mean(axis=1),
-        "importance_std": importances.std(axis=1),
-    })
+    results = pd.DataFrame(
+        {
+            "feature": feature_names,
+            "importance_mean": importances.mean(axis=1),
+            "importance_std": importances.std(axis=1),
+        }
+    )
     results = results.sort_values("importance_mean", ascending=False).reset_index(drop=True)
 
     logger.info(f"✓ Permutation importance computed ({n_repeats} repeats, {metric})")
@@ -95,10 +102,11 @@ def _compute_error(y_true: np.ndarray, y_pred: np.ndarray, metric: str) -> float
 
 # ── SHAP Explainability (tree models) ───────────────────────────────
 
+
 def shap_feature_importance(
     model: Any,
     X: np.ndarray,
-    feature_names: Optional[list[str]] = None,
+    feature_names: list[str] | None = None,
     max_samples: int = 500,
 ) -> dict[str, Any]:
     """
@@ -120,9 +128,8 @@ def shap_feature_importance(
         import shap
     except ImportError:
         raise ImportError(
-            "SHAP is required for tree-based explanations. "
-            "Install with: pip install shap"
-        )
+            "SHAP is required for tree-based explanations. " "Install with: pip install shap"
+        ) from None
 
     feature_names = feature_names or [f"f{i}" for i in range(X.shape[1])]
 
@@ -140,10 +147,16 @@ def shap_feature_importance(
 
     # Mean absolute SHAP value per feature
     mean_abs_shap = np.abs(shap_values).mean(axis=0)
-    importance_df = pd.DataFrame({
-        "feature": feature_names,
-        "mean_abs_shap": mean_abs_shap,
-    }).sort_values("mean_abs_shap", ascending=False).reset_index(drop=True)
+    importance_df = (
+        pd.DataFrame(
+            {
+                "feature": feature_names,
+                "mean_abs_shap": mean_abs_shap,
+            }
+        )
+        .sort_values("mean_abs_shap", ascending=False)
+        .reset_index(drop=True)
+    )
 
     logger.info(f"✓ SHAP values computed for {X_sample.shape[0]} samples")
 
@@ -157,6 +170,7 @@ def shap_feature_importance(
 
 
 # ── Sensor Contribution Analysis ────────────────────────────────────
+
 
 def sensor_contribution_analysis(
     importance_df: pd.DataFrame,
@@ -219,8 +233,9 @@ def sensor_contribution_analysis(
         df.groupby("sensor")[imp_col]
         .agg(["sum", "mean", "count"])
         .sort_values("sum", ascending=False)
-        .rename(columns={"sum": "total_importance", "mean": "avg_importance",
-                         "count": "n_features"})
+        .rename(
+            columns={"sum": "total_importance", "mean": "avg_importance", "count": "n_features"}
+        )
     )
 
     # Aggregate by feature type
@@ -228,15 +243,15 @@ def sensor_contribution_analysis(
         df.groupby("feature_type")[imp_col]
         .agg(["sum", "mean", "count"])
         .sort_values("sum", ascending=False)
-        .rename(columns={"sum": "total_importance", "mean": "avg_importance",
-                         "count": "n_features"})
+        .rename(
+            columns={"sum": "total_importance", "mean": "avg_importance", "count": "n_features"}
+        )
     )
 
     # Top individual features
     top_features = df.nlargest(top_n, imp_col)[["feature", "sensor", "feature_type", imp_col]]
 
-    logger.info(f"✓ Sensor contribution analysis — "
-                f"top sensor: {sensor_ranking.index[0]}")
+    logger.info(f"✓ Sensor contribution analysis — " f"top sensor: {sensor_ranking.index[0]}")
 
     return {
         "sensor_ranking": sensor_ranking,
@@ -247,8 +262,9 @@ def sensor_contribution_analysis(
 
 # ── Attention Weight Extraction (Transformer) ──────────────────────
 
+
 def extract_attention_weights(
-    model: "torch.nn.Module",
+    model: torch.nn.Module,
     X: np.ndarray,
     sample_idx: int = 0,
 ) -> dict[str, Any]:
@@ -287,7 +303,7 @@ def extract_attention_weights(
         hooks.append(hook)
 
     # Forward pass with attention capture
-    x_tensor = torch.tensor(X[sample_idx:sample_idx + 1], dtype=torch.float32).to(device)
+    x_tensor = torch.tensor(X[sample_idx : sample_idx + 1], dtype=torch.float32).to(device)
 
     # Enable attention output
     for layer in model.transformer_encoder.layers:
@@ -312,8 +328,10 @@ def extract_attention_weights(
     }
 
     if attention_weights:
-        logger.info(f"✓ Extracted attention from {len(attention_weights)} layers "
-                    f"(shape per layer: {attention_weights[0].shape})")
+        logger.info(
+            f"✓ Extracted attention from {len(attention_weights)} layers "
+            f"(shape per layer: {attention_weights[0].shape})"
+        )
     else:
         logger.warning("No attention weights captured — model may not expose them")
 
@@ -321,6 +339,7 @@ def extract_attention_weights(
 
 
 # ── Report Generation ───────────────────────────────────────────────
+
 
 def generate_explanation_report(
     model_type: str,
@@ -354,22 +373,26 @@ def generate_explanation_report(
         bar = "█" * int(row["total_importance"] / sensor_rank["total_importance"].max() * 20)
         lines.append(f"  {i + 1:2d}. {sensor:15s}  {row['total_importance']:.4f}  {bar}")
 
-    lines.extend([
-        "",
-        "Feature Type Breakdown:",
-        "─" * 40,
-    ])
+    lines.extend(
+        [
+            "",
+            "Feature Type Breakdown:",
+            "─" * 40,
+        ]
+    )
 
     type_rank = sensor_analysis["feature_type_ranking"]
     for ftype, row in type_rank.iterrows():
         pct = row["total_importance"] / type_rank["total_importance"].sum() * 100
         lines.append(f"  {ftype:12s}  {pct:5.1f}%  ({int(row['n_features'])} features)")
 
-    lines.extend([
-        "",
-        f"Top {top_n} Individual Features:",
-        "─" * 40,
-    ])
+    lines.extend(
+        [
+            "",
+            f"Top {top_n} Individual Features:",
+            "─" * 40,
+        ]
+    )
 
     imp_col = "mean_abs_shap" if "mean_abs_shap" in importance_df.columns else "importance_mean"
     for i, row in importance_df.head(top_n).iterrows():
@@ -380,6 +403,7 @@ def generate_explanation_report(
     report = "\n".join(lines)
     logger.info(f"\n{report}")
     return report
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

@@ -14,16 +14,21 @@ Anthropic Claude Opus 4.6 used for code formatting and cleanup assistance.
 License: MIT License - See LICENSE
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import optuna
 
 logger = logging.getLogger("turbofault")
 
 
 def _objective_xgboost(
-    trial: "optuna.Trial",
+    trial: optuna.Trial,
     X_train: np.ndarray,
     y_train: np.ndarray,
     X_val: np.ndarray,
@@ -49,7 +54,7 @@ def _objective_xgboost(
 
 
 def _objective_deep(
-    trial: "optuna.Trial",
+    trial: optuna.Trial,
     model_type: str,
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -57,7 +62,6 @@ def _objective_deep(
     y_val: np.ndarray,
 ) -> float:
     """Optuna objective for deep learning models."""
-    import torch
 
     from turbofault.training.evaluation import evaluate_rul
     from turbofault.training.trainer import predict_deep, train_deep
@@ -66,6 +70,7 @@ def _objective_deep(
 
     if model_type == "lstm":
         from turbofault.models.lstm import LSTMModel
+
         model = LSTMModel(
             input_dim=input_dim,
             hidden_dim=trial.suggest_categorical("hidden_dim", [64, 128, 256]),
@@ -75,6 +80,7 @@ def _objective_deep(
         )
     elif model_type == "gru":
         from turbofault.models.lstm import GRUModel
+
         model = GRUModel(
             input_dim=input_dim,
             hidden_dim=trial.suggest_categorical("hidden_dim", [64, 128, 256]),
@@ -83,6 +89,7 @@ def _objective_deep(
         )
     elif model_type == "transformer":
         from turbofault.models.transformer import TransformerRUL
+
         d_model = trial.suggest_categorical("d_model", [64, 128, 256])
         n_heads = trial.suggest_categorical("n_heads", [4, 8])
         model = TransformerRUL(
@@ -95,9 +102,10 @@ def _objective_deep(
         )
     elif model_type == "cnn1d":
         from turbofault.models.cnn1d import CNN1DModel
+
         n_blocks = trial.suggest_int("n_blocks", 2, 4)
         base_ch = trial.suggest_categorical("base_channels", [32, 64, 128])
-        channels = tuple(base_ch * (2 ** i) for i in range(n_blocks))
+        channels = tuple(base_ch * (2**i) for i in range(n_blocks))
         kernel_sizes = tuple(
             trial.suggest_categorical(f"kernel_{i}", [3, 5, 7]) for i in range(n_blocks)
         )
@@ -138,7 +146,7 @@ def run_hp_search(
     X_val: np.ndarray,
     y_val: np.ndarray,
     n_trials: int = 50,
-    study_name: Optional[str] = None,
+    study_name: str | None = None,
     direction: str = "minimize",
 ) -> dict[str, Any]:
     """
@@ -162,9 +170,8 @@ def run_hp_search(
         import optuna
     except ImportError:
         raise ImportError(
-            "Optuna is required for HP search. "
-            "Install with: pip install turbofault[optuna]"
-        )
+            "Optuna is required for HP search. " "Install with: pip install turbofault[optuna]"
+        ) from None
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     study_name = study_name or f"turbofault-{model_type}"
@@ -177,9 +184,7 @@ def run_hp_search(
         )
     elif model_type in ("lstm", "gru", "transformer", "cnn1d"):
         study.optimize(
-            lambda trial: _objective_deep(
-                trial, model_type, X_train, y_train, X_val, y_val
-            ),
+            lambda trial: _objective_deep(trial, model_type, X_train, y_train, X_val, y_val),
             n_trials=n_trials,
         )
     else:
@@ -193,6 +198,7 @@ def run_hp_search(
         "best_value": study.best_value,
         "study": study,
     }
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

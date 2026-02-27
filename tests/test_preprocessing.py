@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from turbofault.data.dataset import OPERATIONAL_SETTINGS, SENSOR_COLUMNS, CMAPSSDataset
+from turbofault.data.dataset import OPERATIONAL_SETTINGS, SENSOR_COLUMNS
 from turbofault.data.preprocessing import (
     create_sequences,
     drop_low_variance_sensors,
@@ -82,7 +82,7 @@ class TestCreateSequences:
         X, y, ids = create_sequences(df, features, window_size=10)
         assert X.ndim == 3
         assert X.shape[1] == 10  # window_size
-        assert X.shape[2] == 3   # n_features
+        assert X.shape[2] == 3  # n_features
         assert len(y) == len(X)
         assert len(ids) == len(X)
 
@@ -134,6 +134,7 @@ class TestGetLastCycle:
         last = get_last_cycle_per_engine(df)
         assert len(last) == 5
         assert all(last["cycle"] == 50)
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

@@ -12,7 +12,6 @@ License: MIT License - See LICENSE
 """
 
 import logging
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -30,8 +29,8 @@ logger = logging.getLogger("turbofault")
 
 def normalize_sensors(
     train_df: pd.DataFrame,
-    test_df: Optional[pd.DataFrame] = None,
-    columns: Optional[list[str]] = None,
+    test_df: pd.DataFrame | None = None,
+    columns: list[str] | None = None,
     method: str = "minmax",
 ) -> tuple[pd.DataFrame, pd.DataFrame | None, MinMaxScaler | StandardScaler]:
     """
@@ -70,7 +69,7 @@ def normalize_sensors(
 
 def drop_low_variance_sensors(
     df: pd.DataFrame,
-    sensors: Optional[list[str]] = None,
+    sensors: list[str] | None = None,
 ) -> pd.DataFrame:
     """
     Drop sensors that have near-zero variance (uninformative).
@@ -127,18 +126,22 @@ def create_sequences(
         # Zero-pad if engine has fewer cycles than window_size
         if len(features) < window_size:
             pad_len = window_size - len(features)
-            features = np.vstack([
-                np.zeros((pad_len, features.shape[1])),
-                features,
-            ])
-            targets = np.concatenate([
-                np.full(pad_len, targets[0]),
-                targets,
-            ])
+            features = np.vstack(
+                [
+                    np.zeros((pad_len, features.shape[1])),
+                    features,
+                ]
+            )
+            targets = np.concatenate(
+                [
+                    np.full(pad_len, targets[0]),
+                    targets,
+                ]
+            )
 
         # Slide window
         for i in range(0, len(features) - window_size + 1, stride):
-            X_list.append(features[i: i + window_size])
+            X_list.append(features[i : i + window_size])
             y_list.append(targets[i + window_size - 1])
             id_list.append(engine_id)
 
@@ -146,8 +149,9 @@ def create_sequences(
     y = np.array(y_list, dtype=np.float32)
     engine_ids = np.array(id_list)
 
-    logger.info(f"✓ Created {len(X):,} sequences: "
-                f"shape=({X.shape[0]}, {X.shape[1]}, {X.shape[2]})")
+    logger.info(
+        f"✓ Created {len(X):,} sequences: " f"shape=({X.shape[0]}, {X.shape[1]}, {X.shape[2]})"
+    )
     return X, y, engine_ids
 
 
@@ -180,11 +184,13 @@ def temporal_train_val_split(
         train_df = df[df["engine_id"].isin(train_engines)].copy()
         val_df = df[df["engine_id"].isin(val_engines)].copy()
 
-        logger.info(f"✓ Temporal split (by engine): "
-                    f"{len(train_engines)} train, {len(val_engines)} val engines")
+        logger.info(
+            f"✓ Temporal split (by engine): "
+            f"{len(train_engines)} train, {len(val_engines)} val engines"
+        )
     else:
         train_parts, val_parts = [], []
-        for engine_id, engine_df in df.groupby("engine_id"):
+        for _engine_id, engine_df in df.groupby("engine_id"):
             engine_df = engine_df.sort_values("cycle")
             n_val = max(1, int(len(engine_df) * val_fraction))
             train_parts.append(engine_df.iloc[:-n_val])
@@ -193,8 +199,9 @@ def temporal_train_val_split(
         train_df = pd.concat(train_parts, ignore_index=True)
         val_df = pd.concat(val_parts, ignore_index=True)
 
-        logger.info(f"✓ Temporal split (by cycle): "
-                    f"{len(train_df):,} train, {len(val_df):,} val samples")
+        logger.info(
+            f"✓ Temporal split (by cycle): " f"{len(train_df):,} train, {len(val_df):,} val samples"
+        )
 
     return train_df, val_df
 
@@ -253,9 +260,7 @@ def prepare_tabular_data(
         )
 
     # Split training data
-    train_split, val_split = temporal_train_val_split(
-        train_df, val_fraction=val_fraction
-    )
+    train_split, val_split = temporal_train_val_split(train_df, val_fraction=val_fraction)
 
     # Test: use last cycle per engine
     test_last = get_last_cycle_per_engine(test_df)
@@ -316,9 +321,7 @@ def prepare_sequence_data(
         )
 
     # Split before windowing
-    train_split, val_split = temporal_train_val_split(
-        train_df, val_fraction=val_fraction
-    )
+    train_split, val_split = temporal_train_val_split(train_df, val_fraction=val_fraction)
 
     existing_features = [c for c in feature_columns if c in train_split.columns]
 
@@ -344,6 +347,7 @@ def prepare_sequence_data(
         "scaler": scaler,
         "window_size": window_size,
     }
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

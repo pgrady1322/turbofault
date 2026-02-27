@@ -10,7 +10,6 @@ License: MIT License - See LICENSE
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from turbofault.data.dataset import OPERATIONAL_SETTINGS, SENSOR_COLUMNS
 from turbofault.data.features import (
@@ -138,6 +137,7 @@ class TestBuildFeatureSet:
         assert "engine_id" not in feature_cols
         assert "cycle" not in feature_cols
         assert "rul" not in feature_cols
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.

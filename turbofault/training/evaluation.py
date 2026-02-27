@@ -14,7 +14,6 @@ License: MIT License - See LICENSE
 """
 
 import logging
-from typing import Any, Optional
 
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -111,9 +110,7 @@ def evaluate_per_engine(
         mask = engine_ids == engine_id
         if mask.sum() < 2:
             continue
-        results[int(engine_id)] = evaluate_rul(
-            y_true[mask], y_pred[mask], prefix=""
-        )
+        results[int(engine_id)] = evaluate_rul(y_true[mask], y_pred[mask], prefix="")
     return results
 
 
@@ -152,6 +149,7 @@ def print_comparison_table(
     print(table)
     logger.info(f"\n{table}")
     return table
+
 
 # TurboFault v0.1.0
 # Any usage is subject to this software's license.
