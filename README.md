@@ -47,6 +47,22 @@ Each engine records **3 operational settings** and **21 sensor channels** per cy
 
 ---
 
+## Results
+
+### XGBoost — Top 20 Feature Importances
+
+Engineered features (rolling statistics, lag values, deltas, EWMA) dominate over raw sensor readings, validating the feature engineering pipeline.
+
+![XGBoost Top 20 Feature Importances](docs/figures/xgboost_top20_features.png)
+
+### Sensor Outlier Analysis
+
+IQR-based outlier detection across the 14 active sensors. In prognostics data, "outliers" near end-of-life are actually the degradation signal — they carry the most predictive information and should **not** be removed.
+
+![Sensor Outlier Box Plots](docs/figures/sensor_outlier_boxplots.png)
+
+---
+
 ## Quick Start
 
 ### Installation
