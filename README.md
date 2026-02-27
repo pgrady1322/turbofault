@@ -8,12 +8,14 @@ Predict turbofan engine failure using the NASA C-MAPSS dataset — fusing 21 sen
 
 ## Why This Project
 
+This project is a proof-of-concept for liftover of genomics engineering and machine learning concepts to other data science applications. Code is pulled from my genomics repositories for the following applications:
+
 | Skill | Source | Application Here |
 |-------|--------|------------------|
 | Sensor fusion | immunomics (multi-omics integration) | 21-channel sensor → unified degradation signal |
 | Temporal modeling | scRN_AI (trajectory inference) | LSTM/Transformer sequence windows |
 | Feature engineering | GraphFraud (Elliptic features) | Rolling stats, lag features, EWMA |
-| Tabular baselines | GraphFraud (XGBoost) | XGBoost / RF / Ridge baselines |
+| Tabular baselines | strandweaver (XGBoost training) | XGBoost / RF / Ridge baselines |
 | Attention mechanisms | strandweaver (Transformer) | Multi-head self-attention over sensor sequences |
 
 ---
@@ -47,7 +49,9 @@ Each engine records **3 operational settings** and **21 sensor channels** per cy
 
 ---
 
-## Results
+## Selected Results / Figures Generated
+
+Although this is directly applied to the NASA CMAPSS Jet Engine sensor degradation dataset, it is also applicable to similar sensor degradation or RUL (remaining useful life) datasets.
 
 ### XGBoost — Top 20 Feature Importances
 
