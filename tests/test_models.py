@@ -124,9 +124,18 @@ class TestEvaluation:
 
 
 # ── Deep model tests (skipped if torch not installed) ──────────────
-torch = pytest.importorskip("torch")
+try:
+    import torch
+
+    HAS_TORCH = True
+except ImportError:
+    torch = None  # type: ignore[assignment]
+    HAS_TORCH = False
+
+requires_torch = pytest.mark.skipif(not HAS_TORCH, reason="PyTorch not installed")
 
 
+@requires_torch
 class TestLSTMModel:
     def test_forward_shape(self):
         from turbofault.models.lstm import LSTMModel
@@ -151,6 +160,7 @@ class TestLSTMModel:
         assert model.num_parameters > 0
 
 
+@requires_torch
 class TestGRUModel:
     def test_forward_shape(self):
         from turbofault.models.lstm import GRUModel
@@ -161,6 +171,7 @@ class TestGRUModel:
         assert out.shape == (4, 1)
 
 
+@requires_torch
 class TestTransformerModel:
     def test_forward_shape(self):
         from turbofault.models.transformer import TransformerRUL
@@ -181,6 +192,7 @@ class TestTransformerModel:
         assert out.shape == (4, 1)
 
 
+@requires_torch
 class TestCNN1DModel:
     def test_forward_shape(self):
         from turbofault.models.cnn1d import CNN1DModel
