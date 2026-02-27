@@ -44,7 +44,7 @@ deep = [
 ]
 optuna = ["optuna>=3.0"]
 mlops = ["mlflow>=2.0", "dvc>=3.0"]
-dev = ["pytest>=7.0", "pytest-cov", "ruff", "mypy"]
+dev = ["pytest>=7.0", "pytest-cov", "ruff", "black", "mypy"]
 all = ["turbofault[deep,optuna,mlops,dev]"]
 
 [project.scripts]
