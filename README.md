@@ -1,5 +1,9 @@
 # TurboFault
 
+[![CI](https://github.com/pgrady1322/turbofault/actions/workflows/ci.yml/badge.svg)](https://github.com/pgrady1322/turbofault/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 **Multimodal Time-Series Anomaly Detection & Remaining Useful Life Prediction**
 
 Predict turbofan engine failure using the NASA C-MAPSS dataset — fusing 21 sensor channels + 3 operational settings through XGBoost baselines, LSTM, Transformer encoders, and 1D-CNNs.
